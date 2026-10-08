@@ -1,5 +1,5 @@
 import type { AudioEngine } from '../audio/audio';
-import { Feedback } from '../app/feedback';
+import { Feedback, type FxSink } from '../app/feedback';
 import { clamp, normalize, type Vec2 } from '../core/math';
 import { NO_INPUT, type PlayerInput, World } from '../game/world';
 import type { Renderer } from '../render/renderer';
@@ -17,8 +17,10 @@ export interface Shot {
   focus?: (w: World, t: number) => Vec2 | null;
   hidePlayer?: boolean;
   input?: (w: World, t: number) => PlayerInput;
-  /** One-shot actions at shot-local times: scripted pulses, music hits… */
-  cues?: Array<[at: number, run: (w: World, audio: AudioEngine) => void]>;
+  /** One-shot actions at shot-local times: scripted pulses, music hits, screen fx… */
+  cues?: Array<[at: number, run: (w: World, audio: AudioEngine, fx: FxSink | null) => void]>;
+  /** Title cards, timed from the start of this shot (they may outlast it). */
+  cards?: Card[];
 }
 
 export interface Card {
@@ -28,6 +30,8 @@ export interface Card {
   className?: string;
   fadeIn?: number;
   fadeOut?: number;
+  /** Slam in instead of easing: starts oversized and snaps to size. */
+  punch?: boolean;
 }
 
 /**
@@ -44,20 +48,26 @@ export class Director {
   private slowmo = 0;
   private readonly feedback: Feedback;
   private cardEls: HTMLElement[] = [];
+  /** All cards on the global timeline. */
+  private readonly cards: Card[] = [];
   readonly duration: number;
 
   constructor(
     private readonly shots: Shot[],
-    private readonly cards: Card[],
     private readonly audio: AudioEngine,
     private readonly renderer: Renderer | null,
     cardHost: HTMLElement | null,
     private readonly fadeEl: HTMLElement | null,
   ) {
-    this.duration = shots.reduce((sum, s) => sum + s.duration, 0);
+    let start = 0;
+    for (const shot of shots) {
+      for (const c of shot.cards ?? []) this.cards.push({ ...c, from: start + c.from, to: start + c.to });
+      start += shot.duration;
+    }
+    this.duration = start;
     this.feedback = new Feedback(audio, renderer);
     if (cardHost) {
-      this.cardEls = cards.map((c) => {
+      this.cardEls = this.cards.map((c) => {
         const el = document.createElement('div');
         el.className = `card ${c.className ?? ''}`;
         el.innerHTML = c.html;
@@ -89,6 +99,8 @@ export class Director {
     const shot = this.shot;
     const fresh = shot.world !== undefined || prev < 0;
     if (shot.world) this.world = shot.world();
+    // Cues at t=0 run before the first tick — make sure they are heard from the new viewpoint.
+    this.audio.setListener(this.world.player.pos);
     if (this.renderer) {
       if (fresh) this.renderer.bindWorld(this.world);
       this.renderer.hidePlayer = shot.hidePlayer ?? false;
@@ -115,7 +127,7 @@ export class Director {
     const t0 = this.shotTime;
     this.audio.seek(this.time);
     for (const [at, run] of shot.cues ?? []) {
-      if (at >= t0 && at < t0 + TICK) run(this.world, this.audio);
+      if (at >= t0 && at < t0 + TICK) run(this.world, this.audio, this.renderer);
     }
 
     const input = shot.input?.(this.world, t0) ?? NO_INPUT;
@@ -151,10 +163,10 @@ export class Director {
       const fo = c.fadeOut ?? 0.6;
       const a = clamp(Math.min((this.time - c.from) / fi, (c.to - this.time) / fo), 0, 1);
       el.style.opacity = String(a * a * (3 - 2 * a));
-      // Slow push-in while the card is up.
+      // Slow push-in while the card is up; a punch card slams in from oversized first.
       const k = clamp((this.time - c.from) / Math.max(0.01, c.to - c.from), 0, 1);
-      el.style.transform = `translate(-50%, -50%) scale(${0.96 + k * 0.06})`;
-      el.style.letterSpacing = '';
+      const slam = c.punch ? 0.35 * Math.pow(clamp(1 - (this.time - c.from) / 0.22, 0, 1), 2) : 0;
+      el.style.transform = `translate(-50%, -50%) scale(${0.96 + k * 0.06 + slam})`;
     });
     if (this.fadeEl) {
       const tail = clamp((this.time - (this.duration - 1.2)) / 1.2, 0, 1);

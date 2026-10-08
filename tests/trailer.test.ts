@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { AudioEngine } from '../src/audio/audio';
 import { Director } from '../src/trailer/director';
-import { createShots, CARDS } from '../src/trailer/shots';
+import { createShots } from '../src/trailer/shots';
 import type { World } from '../src/game/world';
 
 /** Runs the whole trailer headless and keeps each shot's final world. */
 function runTrailer(): Map<string, World> {
-  const director = new Director(createShots(), CARDS, new AudioEngine(), null, null, null);
+  const director = new Director(createShots(), new AudioEngine(), null, null, null);
   const out = new Map<string, World>();
   while (!director.done) {
     director.step();
@@ -17,6 +17,11 @@ function runTrailer(): Map<string, World> {
 
 describe('trailer script', () => {
   const shots = runTrailer();
+
+  it('cuts from "Ты слышишь" straight to "И оно — тоже", then the hunt for the exit', () => {
+    const names = createShots().map((s) => s.name);
+    expect(names.slice(0, 4)).toEqual(['A-blind', 'B-first-sound', 'D-it-hears', 'C-explore']);
+  });
 
   it('plays every shot', () => {
     expect([...shots.keys()]).toEqual(createShots().map((s) => s.name));

@@ -1,6 +1,6 @@
 import { lerp, type Vec2 } from '../core/math';
 import { type Enemy, type EnemyState, World } from '../game/world';
-import { type Card, type Shot, follow, once, sequence } from './director';
+import { type Shot, follow, once, sequence } from './director';
 import { buildStage, door, room } from './stage';
 
 const ease = (k: number) => {
@@ -26,12 +26,12 @@ const pulseAtPlayer = (source: 'intro' | 'sneakStep' | 'step') => (w: World) =>
  * Timeline (global seconds)
  *  0.0  A  blind          — "Ты не видишь."
  *  5.0  B  first sound    — "Ты слышишь." → clap reveals the room
- * 11.0  C  explore        — "Найди выход"
- * 16.0  D  it hears       — "И оно — тоже."
- * 21.5  E  distraction    — stone lures it away, sneak past
- * 27.5  F  montage        — ambush / chase / caught
- * 33.3  G  exit           — "Спустись глубже."
- * 37.3  H  logo
+ * 11.0  D  it hears       — hard cut: scream, "И оно — тоже."
+ * 16.0  C  explore        — "Найди выход"
+ * 21.0  E  distraction    — stone lures it away, sneak past
+ * 27.0  F  montage        — ambush / chase / caught
+ * 32.8  G  exit           — "Спустись глубже."
+ * 36.8  H  logo
  */
 /** Fresh shot list each time — input scripts keep per-run state. */
 export function createShots(): Shot[] {
@@ -47,6 +47,7 @@ export function createShots(): Shot[] {
         [3.2, pulseAtPlayer('sneakStep')],
         [3.8, (_w, a) => a.heartbeat(0.9)],
       ],
+      cards: [{ from: 0.8, to: 3.4, html: 'Ты не видишь.' }],
     },
     {
       name: 'B-first-sound',
@@ -61,6 +62,42 @@ export function createShots(): Shot[] {
         [2.4, (_w, a) => a.heartbeat(1)],
         [3.6, (_w, a) => a.hit(0.5)],
       ],
+      cards: [{ from: 0.6, to: 3.4, html: 'Ты слышишь.' }],
+    },
+    {
+      // Hard cut straight out of the calm reveal: it was right there all along.
+      name: 'D-it-hears',
+      duration: 5,
+      world: () => {
+        const w = stage({ x: 640, y: 150 }, [{ x: 925, y: 150 }]);
+        guide(w.enemies[0]!, [{ x: 890, y: 205 }]);
+        return w;
+      },
+      zoom: (t) => lerp(1.75, 1.25, ease(t / 0.45)),
+      focus: () => ({ x: 790, y: 150 }),
+      cues: [
+        [
+          0,
+          (w, a, fx) => {
+            const e = w.enemies[0]!;
+            a.hit(1.2);
+            a.enemyAlert(e.pos);
+            a.braam(3.2, 0.28);
+            w.emitPulse('enemyScream', e.pos.x, e.pos.y);
+            e.reveal = 1;
+            e.revealColor = 0xff2d55;
+            fx?.addTrauma(0.75);
+            fx?.flashScreen(0xff1040, 0.3);
+          },
+        ],
+        [1.4, (_w, a) => a.heartbeat(1)],
+        [2.0, (_w, a) => a.heartbeat(1)],
+        [2.6, (_w, a) => a.heartbeat(1)],
+        [3.2, (_w, a) => a.heartbeat(1)],
+        [3.8, (_w, a) => a.heartbeat(1)],
+        [4.4, (_w, a) => a.heartbeat(1)],
+      ],
+      cards: [{ from: 0, to: 3.6, html: 'И оно — тоже.', className: 'red low', fadeIn: 0.04, punch: true }],
     },
     {
       name: 'C-explore',
@@ -79,53 +116,25 @@ export function createShots(): Shot[] {
         [2.7, (_w, a) => a.heartbeat(1)],
         [3.8, (_w, a) => a.heartbeat(1)],
       ],
-    },
-    {
-      name: 'D-it-hears',
-      duration: 5.5,
-      world: () => {
-        const w = stage({ x: 640, y: 150 }, [{ x: 1000, y: 90 }]);
-        guide(w.enemies[0]!, [
-          { x: 940, y: 150 },
-          { x: 890, y: 205 },
-        ]);
-        return w;
-      },
-      zoom: 1.25,
-      focus: () => ({ x: 790, y: 150 }),
-      cues: [
-        [0.4, pulseAtPlayer('intro')],
-        [
-          1.1,
-          (w, a) => {
-            a.braam(3.2, 0.28);
-            const e = w.enemies[0]!;
-            w.emitPulse('enemyScream', e.pos.x, e.pos.y);
-            e.reveal = 1;
-            e.revealColor = 0xff2d55;
-          },
-        ],
-        [3.2, (_w, a) => a.heartbeat(1)],
-        [3.9, (_w, a) => a.heartbeat(1)],
-        [4.6, (_w, a) => a.heartbeat(1)],
-      ],
+      cards: [{ from: 1.0, to: 4.2, html: 'Найди выход', className: 'gold small' }],
     },
     {
       name: 'E-distraction',
       duration: 6,
+      world: () => {
+        const w = stage({ x: 640, y: 150 }, [{ x: 890, y: 205 }]);
+        guide(w.enemies[0]!, []);
+        return w;
+      },
       zoom: (t) => lerp(1.2, 1.5, ease((t - 1.5) / 2.5)),
       focus: (w) => ({ x: Math.max(w.player.pos.x, 700), y: 150 }),
       input: sequence(
         [0.4, once(0.4, { throwAt: { x: 1000, y: 40 } })],
         [1.6, follow([door(2, 3)])],
-        [
-          2.8,
-          follow([{ x: 850, y: 215 }, door(3, 7), { x: 890, y: 320 }], {
-            sneak: true,
-          }),
-        ],
+        [2.8, follow([{ x: 850, y: 215 }, door(3, 7), { x: 890, y: 320 }], { sneak: true })],
       ),
       cues: [
+        [0.0, pulseAtPlayer('intro')],
         [2.0, (w) => (w.enemies[0]!.linger = 99)],
         [4.0, (_w, a) => a.riser(2)],
       ],
@@ -176,6 +185,7 @@ export function createShots(): Shot[] {
       zoom: (t) => lerp(1.35, 1.6, ease(t / 4)),
       input: follow([room(11)], { start: 0.9 }),
       cues: [[0.2, pulseAtPlayer('intro')]],
+      cards: [{ from: 1.7, to: 3.8, html: 'Спустись глубже.', className: 'gold' }],
     },
     {
       name: 'H-logo',
@@ -196,28 +206,16 @@ export function createShots(): Shot[] {
         [2.6, (w) => w.emitPulse('intro', 260, 520)],
         [4.6, (w) => w.emitPulse('intro', 780, 260)],
       ],
+      cards: [
+        { from: 0.5, to: 8.7, html: '<div class="logo">ЭХО</div>', className: 'logo-card', fadeIn: 1.2 },
+        {
+          from: 2.5,
+          to: 8.7,
+          html: 'Стелс-хоррор, где мир видно только на слух<br><span>Играй бесплатно в браузере · 🎧</span>',
+          className: 'cta-card',
+          fadeIn: 0.8,
+        },
+      ],
     },
   ];
 }
-
-export const CARDS: Card[] = [
-  { from: 0.8, to: 3.4, html: 'Ты не видишь.' },
-  { from: 5.6, to: 8.4, html: 'Ты слышишь.' },
-  { from: 12.0, to: 15.2, html: 'Найди выход', className: 'gold small' },
-  { from: 17.1, to: 20.8, html: 'И оно — тоже.', className: 'red' },
-  { from: 35.0, to: 37.1, html: 'Спустись глубже.', className: 'gold' },
-  {
-    from: 37.8,
-    to: 46,
-    html: '<div class="logo">ЭХО</div>',
-    className: 'logo-card',
-    fadeIn: 1.2,
-  },
-  {
-    from: 39.8,
-    to: 46,
-    html: 'Стелс-хоррор, где мир видно только на слух<br><span>Играй бесплатно в браузере · 🎧</span>',
-    className: 'cta-card',
-    fadeIn: 0.8,
-  },
-];

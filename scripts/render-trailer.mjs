@@ -25,7 +25,7 @@ const SIZE = { width: 1280, height: 720 };
 const skipVideo = process.argv.includes('--skip-video');
 
 /** Gallery stills and poster, by timestamp in seconds. */
-const STILLS = { 'shot-1.jpg': 9.6, 'shot-2.jpg': 22.9, 'shot-3.jpg': 28.4, 'shot-4.jpg': 34.4, 'poster.jpg': 41.5 };
+const STILLS = { 'shot-1.jpg': 9.6, 'shot-2.jpg': 22.9, 'shot-3.jpg': 27.9, 'shot-4.jpg': 33.9, 'poster.jpg': 41.0 };
 
 mkdirSync(OUT, { recursive: true });
 mkdirSync(WORK, { recursive: true });

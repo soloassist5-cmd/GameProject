@@ -73,6 +73,11 @@ body {
     0 0 70px rgba(255, 45, 85, 0.4);
 }
 
+/* Lower third — keeps the subject of the shot visible above the title. */
+.card.low {
+  top: 76%;
+}
+
 .card.logo-card {
   top: 44%;
 }

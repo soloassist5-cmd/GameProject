@@ -3,7 +3,7 @@ import { AudioEngine } from '../audio/audio';
 import { FixedLoop } from '../core/loop';
 import { Renderer } from '../render/renderer';
 import { Director, TICK } from './director';
-import { CARDS, createShots } from './shots';
+import { createShots } from './shots';
 import { encodeWav, toBase64 } from './wav';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -23,7 +23,7 @@ async function boot(): Promise<void> {
   if (capture) {
     document.body.classList.add('capture');
     renderer.setGrain(0.02);
-    const director = new Director(createShots(), CARDS, new AudioEngine(), renderer, $('cards'), $('fade'));
+    const director = new Director(createShots(), new AudioEngine(), renderer, $('cards'), $('fade'));
     const fps = 30;
     const ticksPerFrame = Math.round(1 / fps / TICK);
     Object.assign(window, {
@@ -39,7 +39,7 @@ async function boot(): Promise<void> {
         },
         async audioWav(): Promise<string> {
           const audio = AudioEngine.offline(director.duration + 1.5);
-          const offline = new Director(createShots(), CARDS, audio, null, null, null);
+          const offline = new Director(createShots(), audio, null, null, null);
           while (!offline.done) offline.step();
           return toBase64(encodeWav(await audio.renderOffline()));
         },
@@ -54,7 +54,7 @@ async function boot(): Promise<void> {
   const start = () => {
     audio.unlock();
     $('cards').innerHTML = '';
-    director = new Director(createShots(), CARDS, audio, renderer, $('cards'), $('fade'));
+    director = new Director(createShots(), audio, renderer, $('cards'), $('fade'));
     document.body.classList.remove('ended');
     document.body.classList.add('playing');
   };
