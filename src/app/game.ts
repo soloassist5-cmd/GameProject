@@ -4,6 +4,7 @@ import { generateLevel } from '../game/level';
 import { NO_INPUT, World, type GameEvent, type PlayerInput } from '../game/world';
 import { Renderer } from '../render/renderer';
 import { Hud, type Screen } from '../ui/hud';
+import { Feedback } from './feedback';
 import { loadBest, saveBest } from './storage';
 
 const CONTROLS_HINT =
@@ -22,6 +23,7 @@ export class Game {
   private screenTimer = 0;
   private runTime = 0;
   private best = loadBest();
+  private readonly feedback: Feedback;
 
   constructor(
     private readonly renderer: Renderer,
@@ -29,6 +31,7 @@ export class Game {
     private readonly hud: Hud,
     private readonly input: Input,
   ) {
+    this.feedback = new Feedback(audio, renderer);
     const params = new URLSearchParams(location.search);
     this.baseSeed = Number(params.get('seed')) || (Math.random() * 2 ** 31) >>> 0;
     this.renderer.debug = params.has('debug');
@@ -149,72 +152,19 @@ export class Game {
   private handleEvents(events: GameEvent[]): void {
     const live = this.screen === 'playing' || this.screen === 'dead' || this.screen === 'won';
     for (const ev of events) {
-      const at = { x: ev.x, y: ev.y };
-      switch (ev.type) {
-        case 'pulse':
-          if (!live) {
-            if (ev.source === 'intro') this.renderer.shockwaveAt(at);
-            break;
-          }
-          switch (ev.source) {
-            case 'step':
-              this.audio.step(at, false);
-              this.renderer.onStep();
-              break;
-            case 'sneakStep':
-              this.audio.step(at, true);
-              this.renderer.onStep();
-              break;
-            case 'clap':
-              this.audio.clap(at);
-              this.renderer.shockwaveAt(at);
-              this.renderer.addTrauma(0.25);
-              break;
-            case 'intro':
-              this.audio.intro(at);
-              this.renderer.shockwaveAt(at);
-              break;
-            case 'stone':
-              this.audio.stoneLand(at);
-              this.renderer.addTrauma(0.08);
-              break;
-            case 'enemyStep':
-              this.audio.enemyStep(at);
-              break;
-            default:
-              break;
-          }
-          break;
-        case 'throw':
-          this.audio.throwStone(at);
-          break;
-        case 'alert':
-          if (!live) break;
-          this.audio.enemyAlert(at);
-          this.renderer.addTrauma(0.35);
-          break;
-        case 'death':
-          if (this.screen !== 'playing') break;
-          this.audio.death();
-          this.renderer.addTrauma(1);
-          this.renderer.flashScreen(0xff1040, 0.45);
-          this.slowmo = 1.1;
-          this.timeScale = 0.25;
-          this.hud.setDeathStats(this.depth, this.runTime);
-          this.setScreen('dead');
-          break;
-        case 'win':
-          if (this.screen !== 'playing') break;
-          this.audio.win();
-          this.renderer.flashScreen(0xfff2d0, 0.6);
-          this.renderer.addTrauma(0.2);
-          if (this.depth + 1 > this.best) {
-            this.best = this.depth + 1;
-            saveBest(this.best);
-            this.hud.setBest(this.best);
-          }
-          this.setScreen('won');
-          break;
+      this.feedback.apply(ev, live);
+      if (ev.type === 'death' && this.screen === 'playing') {
+        this.slowmo = 1.1;
+        this.timeScale = 0.25;
+        this.hud.setDeathStats(this.depth, this.runTime);
+        this.setScreen('dead');
+      } else if (ev.type === 'win' && this.screen === 'playing') {
+        if (this.depth + 1 > this.best) {
+          this.best = this.depth + 1;
+          saveBest(this.best);
+          this.hud.setBest(this.best);
+        }
+        this.setScreen('won');
       }
     }
   }

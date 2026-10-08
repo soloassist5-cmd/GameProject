@@ -255,11 +255,11 @@ export function findPath(level: Level, from: Vec2, to: Vec2): Vec2[] {
   return path;
 }
 
-function seg(x1: number, y1: number, x2: number, y2: number): Segment {
+export function seg(x1: number, y1: number, x2: number, y2: number): Segment {
   return { a: { x: x1, y: y1 }, b: { x: x2, y: y2 } };
 }
 
-function box(cx: number, cy: number, w: number, h: number, angle: number): Segment[] {
+export function box(cx: number, cy: number, w: number, h: number, angle: number): Segment[] {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const corners = [

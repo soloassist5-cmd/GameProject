@@ -4,50 +4,170 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#030409" />
-    <title>ЭХО</title>
+    <title>ЭХО — стелс-хоррор, где мир видно только на слух</title>
+    <meta
+      name="description"
+      content="Ты не видишь. Ты слышишь. И оно — тоже. Каждый шаг рисует мир светящимися точками, но слепые Слушатели идут на любой шум. Играй бесплатно в браузере."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ЭХО — ты не видишь, ты слышишь" />
+    <meta property="og:description" content="Стелс-хоррор, где мир видно только на слух. Играй бесплатно в браузере." />
+    <meta property="og:image" content="/media/og.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/media/icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;600&family=Manrope:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700&family=Manrope:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
-    <div id="app"></div>
+    <header class="nav">
+      <a class="nav-logo" href="#top" aria-label="ЭХО">ЭХО</a>
+      <nav>
+        <a href="#trailer">Трейлер</a>
+        <a href="#about">Об игре</a>
+        <a class="nav-cta" href="./play/">Играть</a>
+      </nav>
+    </header>
 
-    <div id="hud">
-      <div id="hud-depth">ГЛУБИНА 1</div>
-      <div id="hud-right">
-        <div id="hud-stones" title="Камни"></div>
-        <div id="hud-clap" title="Хлопок (Пробел)"><span></span></div>
-      </div>
-    </div>
-    <div id="hint"></div>
-    <div id="fps"></div>
+    <main>
+      <section id="top" class="hero">
+        <canvas id="echo-field" aria-hidden="true"></canvas>
+        <div class="hero-content">
+          <p class="eyebrow">Стелс-хоррор · браузер · бесплатно</p>
+          <h1 class="hero-logo">ЭХО</h1>
+          <p class="hero-tagline">Ты не видишь. Ты слышишь.<br /><span class="red">И оно — тоже.</span></p>
+          <div class="hero-actions">
+            <a class="btn" href="./play/">Играть в браузере</a>
+            <a class="btn ghost" href="#trailer">▶ Трейлер</a>
+          </div>
+          <p class="touch-note">Игра пока для клавиатуры и мыши — открой на компьютере</p>
+        </div>
+        <p class="hero-hint">
+          <span class="for-mouse">Поводи мышью в темноте. Кликни, чтобы хлопнуть.</span>
+          <span class="for-touch">Коснись темноты, чтобы хлопнуть.</span>
+        </p>
+      </section>
 
-    <section id="screen-title" class="screen">
-      <h1 class="logo">ЭХО</h1>
-      <p class="tagline">Ты не видишь. Ты слышишь.<br />И оно — тоже.</p>
-      <p class="cta">Кликни, чтобы начать</p>
-      <p class="small">🎧 Лучше в наушниках<span id="title-best"></span></p>
-    </section>
+      <section id="trailer" class="section trailer">
+        <div class="section-head">
+          <p class="eyebrow">Трейлер</p>
+          <h2>45 секунд в темноте</h2>
+        </div>
+        <div class="video-frame">
+          <video id="trailer-video" poster="/media/poster.jpg" preload="metadata" playsinline controls>
+            <source src="/media/trailer.mp4" type="video/mp4" />
+            <source src="/media/trailer.webm" type="video/webm" />
+          </video>
+          <button id="video-play" class="video-play" type="button" aria-label="Смотреть трейлер со звуком">
+            <span>▶</span>
+          </button>
+        </div>
+        <p class="caption">
+          Трейлер снят прямо в движке игры: каждый кадр, каждый звук и каждая волна — настоящая симуляция, без
+          видеоредактора. <a href="./trailer/">Смотреть в реальном времени →</a>
+        </p>
+      </section>
 
-    <section id="screen-paused" class="screen">
-      <h2>Пауза</h2>
-      <p class="small">Esc — продолжить · R — заново · M — звук</p>
-    </section>
+      <section id="about" class="section">
+        <div class="section-head">
+          <p class="eyebrow">Об игре</p>
+          <h2>Чтобы видеть, нужно шуметь.<br />А шуметь нельзя.</h2>
+        </div>
+        <div class="features">
+          <article class="feature">
+            <svg class="feature-art" viewBox="0 0 120 120" aria-hidden="true">
+              <path class="walls cyan" d="M14 30 H70 M90 30 H106 V96 H14 Z" />
+              <circle class="ring cyan r1" cx="54" cy="66" r="10" />
+              <circle class="ring cyan r2" cx="54" cy="66" r="10" />
+              <circle class="dot" cx="54" cy="66" r="3.5" />
+            </svg>
+            <h3>Звук — это свет</h3>
+            <p>
+              Шаги, хлопки и брошенные камни расходятся волнами и на секунду проявляют стены. Тишина безопасна, но ты
+              слеп.
+            </p>
+          </article>
+          <article class="feature">
+            <svg class="feature-art" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring red r1" cx="60" cy="60" r="12" />
+              <circle class="ring red r2" cx="60" cy="60" r="12" />
+              <path
+                class="listener"
+                d="M60 38 L64 52 L78 46 L68 58 L82 62 L68 66 L76 78 L63 70 L60 84 L56 70 L44 78 L52 66 L38 62 L52 58 L42 46 L56 52 Z"
+              />
+            </svg>
+            <h3>Тебя тоже слышат</h3>
+            <p>
+              Слепые Слушатели идут на любой шум. Тихий шаг они не заметят, а хлопок услышат через пару комнат.
+            </p>
+          </article>
+          <article class="feature">
+            <svg class="feature-art" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring gold r1" cx="60" cy="60" r="10" />
+              <circle class="ring gold r2" cx="60" cy="60" r="10" />
+              <path class="exit" d="M60 46 L74 60 L60 74 L46 60 Z" />
+              <path class="exit-core" d="M60 54 L66 60 L60 66 L54 60 Z" />
+            </svg>
+            <h3>Выход поёт</h3>
+            <p>
+              Где-то в лабиринте гудит золотой маяк. Найди его по звуку в наушниках и спустись глубже. Каждый уровень
+              новый.
+            </p>
+          </article>
+        </div>
+      </section>
 
-    <section id="screen-dead" class="screen">
-      <h2 class="red">Тебя услышали</h2>
-      <p id="dead-stats" class="small"></p>
-      <p class="cta">R или клик — ещё раз</p>
-    </section>
+      <section class="section">
+        <div class="section-head">
+          <p class="eyebrow">Каждый звук — выбор</p>
+          <h2>Насколько громко ты готов рискнуть?</h2>
+        </div>
+        <div class="noise-table">
+          <div class="noise-row">
+            <span class="key">Shift</span><span class="noise-name">Красться</span>
+            <span class="bar"><i style="--w: 10%"></i></span><span class="noise-note">Почти ничего не видно</span>
+          </div>
+          <div class="noise-row">
+            <span class="key">WASD</span><span class="noise-name">Идти</span>
+            <span class="bar"><i style="--w: 26%"></i></span><span class="noise-note">Видно ближние стены</span>
+          </div>
+          <div class="noise-row">
+            <span class="key">ЛКМ</span><span class="noise-name">Бросить камень</span>
+            <span class="bar"><i class="white" style="--w: 52%"></i></span
+            ><span class="noise-note">Шум там, где камень упал. Отвлекает.</span>
+          </div>
+          <div class="noise-row">
+            <span class="key">Пробел</span><span class="noise-name">Хлопок</span>
+            <span class="bar"><i class="loud" style="--w: 100%"></i></span
+            ><span class="noise-note">Видно полкарты. И тебя слышно.</span>
+          </div>
+        </div>
+      </section>
 
-    <section id="screen-won" class="screen">
-      <h2 class="gold">Выход найден</h2>
-      <p class="small">Спускаемся глубже…</p>
-    </section>
+      <section class="section">
+        <div class="gallery">
+          <img src="/media/shot-1.jpg" alt="Хлопок проявляет комнату" loading="lazy" />
+          <img src="/media/shot-2.jpg" alt="Брошенный камень отвлекает Слушателя" loading="lazy" />
+          <img src="/media/shot-3.jpg" alt="Два Слушателя услышали хлопок" loading="lazy" />
+          <img src="/media/shot-4.jpg" alt="Золотой выход" loading="lazy" />
+        </div>
+      </section>
 
-    <script type="module" src="/src/main.ts"></script>
+      <section class="section final">
+        <h2>Спустись в темноту</h2>
+        <a class="btn big" href="./play/">Играть бесплатно</a>
+        <p class="caption">🎧 Лучше в наушниках · работает в браузере на компьютере</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>ЭХО · прототип v0.1</span>
+      <span>Весь звук синтезируется в реальном времени · PixiJS · Web Audio</span>
+    </footer>
+
+    <script type="module" src="/src/landing/main.ts"></script>
   </body>
 </html>

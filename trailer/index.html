@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#030409" />
+    <title>ЭХО — трейлер</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;600&family=Manrope:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="cards"></div>
+    <div id="fade"></div>
+    <a class="back" href="../">← ЭХО</a>
+
+    <div id="intro" class="overlay">
+      <button id="play" class="btn" type="button">▶ Смотреть трейлер</button>
+      <p class="hint">Трейлер играет сам движок игры в реальном времени · 🎧 со звуком</p>
+    </div>
+
+    <div id="outro" class="overlay">
+      <a class="btn" href="../play/">Играть</a>
+      <button id="replay" class="btn ghost" type="button">↻ Ещё раз</button>
+    </div>
+
+    <script type="module" src="/src/trailer/main.ts"></script>
+  </body>
+</html>

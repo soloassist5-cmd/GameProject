@@ -6,7 +6,9 @@ import { clamp, type Vec2 } from '../core/math';
  * In a game about echoes, sound is half of the visuals.
  */
 export class AudioEngine {
-  private ctx: AudioContext | null = null;
+  private ctx: BaseAudioContext | null = null;
+  /** Offline mode: the time (s) new sounds get scheduled at. Null = live, use currentTime. */
+  private clock: number | null = null;
   private master!: GainNode;
   private dry!: GainNode;
   private reverbIn!: GainNode;
@@ -23,12 +25,40 @@ export class AudioEngine {
   /** Must be called from a user gesture (browser autoplay policy). */
   unlock(): void {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      if (this.ctx instanceof AudioContext && this.ctx.state === 'suspended') void this.ctx.resume();
       return;
     }
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
-    const ctx = new AC();
+    this.build(new AC());
+  }
+
+  /**
+   * An engine that renders into a buffer instead of the speakers —
+   * used to bake the trailer soundtrack frame-accurately.
+   */
+  static offline(seconds: number, sampleRate = 48000): AudioEngine {
+    const engine = new AudioEngine();
+    engine.clock = 0;
+    engine.build(new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate));
+    return engine;
+  }
+
+  /** Offline mode: schedule subsequent sounds at time `t` seconds. */
+  seek(t: number): void {
+    this.clock = t;
+  }
+
+  renderOffline(): Promise<AudioBuffer> {
+    if (!(this.ctx instanceof OfflineAudioContext)) throw new Error('Not an offline engine');
+    return this.ctx.startRendering();
+  }
+
+  private now(): number {
+    return this.clock ?? this.ctx!.currentTime;
+  }
+
+  private build(ctx: BaseAudioContext): void {
     this.ctx = ctx;
 
     const comp = ctx.createDynamicsCompressor();
@@ -58,7 +88,7 @@ export class AudioEngine {
 
   toggleMute(): boolean {
     this.muted = !this.muted;
-    if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.8, this.ctx.currentTime, 0.05);
+    if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.8, this.now(), 0.05);
     return this.muted;
   }
 
@@ -70,7 +100,7 @@ export class AudioEngine {
   updateBeacon(exit: Vec2, active: boolean): void {
     if (!this.ctx) return;
     const { gain, pan } = this.spatial(exit, 520);
-    const t = this.ctx.currentTime;
+    const t = this.now();
     this.beaconGain.gain.setTargetAtTime(active ? gain * 0.09 : 0, t, 0.15);
     this.beaconPan.pan.setTargetAtTime(pan, t, 0.15);
   }
@@ -130,6 +160,102 @@ export class AudioEngine {
     );
   }
 
+  // --- Trailer score (non-spatial) ----------------------------------------
+
+  heartbeat(intensity = 1): void {
+    const at = this.listener;
+    for (const [delay, g] of [
+      [0, 1],
+      [0.28, 0.7],
+    ] as const) {
+      this.tone(at, { type: 'sine', from: 62, to: 34, gain: 0.85 * g * intensity, decay: 0.32, reverb: 0.25, delay });
+    }
+  }
+
+  /** Massive detuned brass-like swell — the trailer "BRAAM". */
+  braam(duration = 2.4, gain = 0.5): void {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const t = this.now();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 2;
+    filter.frequency.setValueAtTime(160, t);
+    filter.frequency.exponentialRampToValueAtTime(1500, t + 0.25);
+    filter.frequency.exponentialRampToValueAtTime(260, t + duration);
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0, t);
+    amp.gain.linearRampToValueAtTime(gain, t + 0.12);
+    amp.gain.setTargetAtTime(gain * 0.6, t + 0.3, 0.4);
+    amp.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    filter.connect(amp);
+    amp.connect(this.dry);
+    amp.connect(this.reverbIn);
+    for (const [f, detune] of [
+      [41.2, 0],
+      [41.2, 14],
+      [82.4, -9],
+      [123.5, 6],
+    ] as const) {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = f;
+      osc.detune.value = detune;
+      osc.connect(filter);
+      osc.start(t);
+      osc.stop(t + duration + 0.1);
+    }
+    this.tone(this.listener, { type: 'sine', from: 55, to: 38, gain: 0.7, decay: duration * 0.8, reverb: 0.2 });
+  }
+
+  /** Short percussive impact for hard cuts. */
+  hit(gain = 1): void {
+    const at = this.listener;
+    this.tone(at, { type: 'sine', from: 95, to: 28, gain: 0.9 * gain, decay: 0.9, reverb: 0.4 });
+    this.noiseHit(at, { gain: 0.6 * gain, type: 'lowpass', freq: 1400, q: 0.6, decay: 0.45, reverb: 1.2 });
+  }
+
+  /** Rising noise + pitch sweep that slams into silence. */
+  riser(duration = 2): void {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const t = this.now();
+    const src = ctx.createBufferSource();
+    src.buffer = this.noise;
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 3;
+    bp.frequency.setValueAtTime(250, t);
+    bp.frequency.exponentialRampToValueAtTime(7000, t + duration);
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110, t);
+    osc.frequency.exponentialRampToValueAtTime(880, t + duration);
+    const oscGain = ctx.createGain();
+    oscGain.gain.value = 0.12;
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.0001, t);
+    amp.gain.exponentialRampToValueAtTime(0.5, t + duration);
+    amp.gain.setValueAtTime(0, t + duration);
+    src.connect(bp).connect(amp);
+    osc.connect(oscGain).connect(amp);
+    amp.connect(this.dry);
+    amp.connect(this.reverbIn);
+    src.start(t);
+    osc.start(t);
+    src.stop(t + duration + 0.05);
+    osc.stop(t + duration + 0.05);
+  }
+
+  /** Slow, hopeful pad for the logo. */
+  pad(duration = 6): void {
+    const at = this.listener;
+    [110, 164.8, 220, 261.6, 329.6].forEach((f, i) =>
+      this.tone(at, { type: 'triangle', from: f, to: f, gain: 0.07, decay: duration, reverb: 1.5, delay: i * 0.04 }),
+    );
+  }
+
   // --- Building blocks -----------------------------------------------------
 
   private spatial(at: Vec2, range = 600): { gain: number; pan: number } {
@@ -174,7 +300,7 @@ export class AudioEngine {
     src.connect(filter);
     const amp = this.route(filter, at, o.gain, o.reverb, o.range);
     if (!amp) return;
-    const t = ctx.currentTime + (o.delay ?? 0);
+    const t = this.now() + (o.delay ?? 0);
     amp.gain.setValueAtTime(0, t);
     amp.gain.linearRampToValueAtTime(1, t + 0.004);
     amp.gain.exponentialRampToValueAtTime(0.001, t + o.decay);
@@ -200,7 +326,7 @@ export class AudioEngine {
     }
     const amp = this.route(out, at, o.gain, o.reverb, o.range);
     if (!amp) return;
-    const t = ctx.currentTime + (o.delay ?? 0);
+    const t = this.now() + (o.delay ?? 0);
     osc.frequency.setValueAtTime(o.from, t);
     osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.to), t + o.decay);
     amp.gain.setValueAtTime(0, t);
@@ -214,7 +340,7 @@ export class AudioEngine {
     const ctx = this.ctx!;
     const bus = ctx.createGain();
     bus.gain.value = 0.0;
-    bus.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 4);
+    bus.gain.linearRampToValueAtTime(0.07, this.now() + 4);
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 240;

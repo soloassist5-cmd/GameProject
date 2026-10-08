@@ -60,9 +60,13 @@ export class Renderer {
   debug = false;
   /** Hide the player dot (title screen keeps the centre clean for the logo). */
   hidePlayer = false;
+  /** Cinematic camera control (trailer): extra zoom and an optional fixed focus point. */
+  readonly shot = { zoomMul: 1, focus: null as Vec2 | null };
 
-  async init(parent: HTMLElement): Promise<void> {
+  /** `autoStart: false` → nothing is drawn until `present()` (frame-exact video capture). */
+  async init(parent: HTMLElement, opts: { autoStart?: boolean } = {}): Promise<void> {
     await this.app.init({
+      autoStart: opts.autoStart ?? true,
       resizeTo: window,
       background: BG_COLOR,
       antialias: true,
@@ -186,6 +190,27 @@ export class Renderer {
     this.stepPop = 1;
   }
 
+  /** Draw the stage right now (manual mode). */
+  present(): void {
+    this.app.render();
+  }
+
+  /** Film grain strength. Video capture keeps it low: per-pixel noise eats codec bitrate. */
+  setGrain(amount: number): void {
+    this.noise.noise = amount;
+  }
+
+  /** Jump the camera to its target without easing — for hard cuts. */
+  cut(world: World): void {
+    const f = this.shot.focus ?? world.player.pos;
+    this.camera.x = f.x;
+    this.camera.y = f.y;
+    this.trauma = 0;
+    this.flash.alpha = 0;
+    this.shockTime = -1;
+    this.shockwave.enabled = false;
+  }
+
   render(world: World, dt: number, aim: Vec2 | null): void {
     this.time += dt;
     this.updateCamera(world, dt, aim);
@@ -200,8 +225,8 @@ export class Renderer {
 
   private updateCamera(world: World, dt: number, aim: Vec2 | null): void {
     const screen = this.app.screen;
-    this.camera.zoom = clamp(Math.min(screen.width, screen.height) / 640, 0.6, 2.4);
-    const p = world.player.pos;
+    this.camera.zoom = clamp(Math.min(screen.width, screen.height) / 640, 0.6, 2.4) * this.shot.zoomMul;
+    const p = this.shot.focus ?? world.player.pos;
     let tx = p.x;
     let ty = p.y;
     if (aim) {
