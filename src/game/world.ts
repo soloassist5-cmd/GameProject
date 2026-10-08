@@ -62,6 +62,8 @@ export type GameEvent =
   | { type: 'pulse'; source: PulseSource; x: number; y: number }
   | { type: 'alert'; x: number; y: number }
   | { type: 'throw'; x: number; y: number }
+  /** Tried to throw with no stones left. */
+  | { type: 'dryThrow'; x: number; y: number }
   | { type: 'death'; x: number; y: number }
   | { type: 'win'; x: number; y: number };
 
@@ -216,6 +218,8 @@ export class World {
       const to = { x: p.pos.x + n.x * reach, y: p.pos.y + n.y * reach };
       this.stones.push({ from: { ...p.pos }, to, t: 0 });
       this.events.push({ type: 'throw', x: p.pos.x, y: p.pos.y });
+    } else if (input.throwAt) {
+      this.events.push({ type: 'dryThrow', x: p.pos.x, y: p.pos.y });
     }
   }
 

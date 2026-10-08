@@ -15,11 +15,24 @@
   <body>
     <div id="app"></div>
 
-    <div id="hud">
+    <div id="hud" class="hud-part">
       <div id="hud-depth">ГЛУБИНА 1</div>
-      <div id="hud-right">
-        <div id="hud-stones" title="Камни"></div>
-        <div id="hud-clap" title="Хлопок (Пробел)"><span></span></div>
+    </div>
+
+    <div id="abilities" class="hud-part">
+      <div id="ability-stones" class="ability">
+        <div id="hud-stones" class="pebbles" aria-hidden="true"></div>
+        <div class="ability-text">
+          <span class="ability-name">Камни <span id="hud-stones-count" class="count"></span></span>
+          <span class="ability-sub"><span class="keycap">ЛКМ</span><span id="hud-stones-note"></span></span>
+        </div>
+      </div>
+      <div id="ability-clap" class="ability">
+        <div id="hud-clap" aria-hidden="true"><span></span></div>
+        <div class="ability-text">
+          <span class="ability-name">Хлопок</span>
+          <span class="ability-sub"><span class="keycap">Пробел</span></span>
+        </div>
       </div>
     </div>
     <div id="hint"></div>

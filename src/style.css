@@ -43,6 +43,7 @@ body:not(.ready) #app::after {
 /* Overlays never eat input — clicks fall through to the canvas. */
 .screen,
 #hud,
+#abilities,
 #hint,
 #fps {
   position: fixed;
@@ -168,34 +169,164 @@ h2 {
   opacity: 1;
 }
 
-#hud-right {
+/* --- Ability bar (bottom-left) --- */
+
+#abilities {
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#abilities.visible {
+  opacity: 1;
+}
+
+.ability {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
+  padding: 10px 14px 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(217, 251, 255, 0.1);
+  background: rgba(3, 4, 9, 0.55);
+  backdrop-filter: blur(6px);
+  transition:
+    opacity 0.4s ease,
+    border-color 0.3s ease;
 }
 
-#hud-stones {
+.ability-text {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1;
 }
 
-.stone {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid var(--dim);
+.ability-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
 }
 
-.stone.full {
-  background: var(--ink);
-  box-shadow: 0 0 8px var(--ink);
-  border-color: var(--ink);
+.ability-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--red);
+}
+
+.count {
+  margin-left: 4px;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.count i {
+  font-style: normal;
+  color: var(--dim);
+}
+
+.keycap {
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding: 3px 6px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(217, 251, 255, 0.25);
+}
+
+/* Pebbles: lit when in hand, a dashed ghost once thrown. */
+.pebbles {
+  display: flex;
+  gap: 4px;
+}
+
+.pebble {
+  width: 20px;
+  height: 16px;
+  overflow: visible;
+}
+
+.pebble path {
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: 0.6;
+  filter: drop-shadow(0 0 3px rgba(230, 253, 255, 0.8));
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease,
+    filter 0.3s ease;
+}
+
+.pebble.spent path {
+  fill: transparent;
+  stroke: rgba(217, 251, 255, 0.35);
+  stroke-dasharray: 1.6 1.6;
+  filter: none;
+}
+
+.pebble.launch {
+  animation: launch 0.5s ease-out;
+}
+
+@keyframes launch {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  35% {
+    transform: translateY(-12px) scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.pebble.refill {
+  animation: refill 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes refill {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.ability.empty {
+  opacity: 0.6;
+}
+
+.ability.denied {
+  animation: deny 0.4s ease;
+  border-color: rgba(255, 45, 85, 0.7);
+}
+
+@keyframes deny {
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 #hud-clap {
   --p: 1;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: conic-gradient(var(--cyan) calc(var(--p) * 360deg), rgba(94, 242, 255, 0.12) 0);
   display: grid;
@@ -204,8 +335,8 @@ h2 {
 }
 
 #hud-clap span {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--bg);
 }
@@ -216,7 +347,7 @@ h2 {
 
 #hint {
   left: 50%;
-  bottom: max(28px, env(safe-area-inset-bottom));
+  bottom: max(92px, env(safe-area-inset-bottom));
   transform: translate(-50%, 10px);
   width: min(720px, calc(100% - 32px));
   text-align: center;

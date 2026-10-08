@@ -158,6 +158,8 @@ export class Game {
         this.timeScale = 0.25;
         this.hud.setDeathStats(this.depth, this.runTime);
         this.setScreen('dead');
+      } else if (ev.type === 'dryThrow') {
+        this.hud.denyStone();
       } else if (ev.type === 'win' && this.screen === 'playing') {
         if (this.depth + 1 > this.best) {
           this.best = this.depth + 1;

@@ -104,6 +104,17 @@ describe('world', () => {
     expect(Math.hypot(e.pos.x - 330, e.pos.y - 110)).toBeLessThan(40);
   });
 
+  it('throwing with an empty hand reports a dry throw and changes nothing', () => {
+    const world = new World(twoRooms());
+    world.stonesLeft = 0;
+    world.update(DT, { ...NO_INPUT, throwAt: { x: 150, y: 100 } });
+    expect(world.stones).toHaveLength(0);
+    expect(world.stonesLeft).toBe(0);
+    const events = world.drainEvents();
+    expect(events.some((e) => e.type === 'dryThrow')).toBe(true);
+    expect(events.some((e) => e.type === 'throw')).toBe(false);
+  });
+
   it('touching a listener ends the run', () => {
     const world = new World(twoRooms({ enemyAt: [{ x: 70, y: 100 }] }));
     world.update(DT, NO_INPUT);

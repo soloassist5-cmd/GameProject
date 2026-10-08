@@ -132,6 +132,11 @@ export class AudioEngine {
     this.tone(at, { type: 'sine', from: 900, to: 400, gain: 0.05, decay: 0.25, reverb: 0.1 });
   }
 
+  /** Empty-handed throw: a dull, dry click right at the player. */
+  dryThrow(): void {
+    this.noiseHit(this.listener, { gain: 0.18, type: 'lowpass', freq: 650, q: 1.2, decay: 0.05, reverb: 0.05 });
+  }
+
   stoneLand(at: Vec2): void {
     this.noiseHit(at, { gain: 0.6, type: 'bandpass', freq: 2600, q: 6, decay: 0.05, reverb: 0.9 });
     this.tone(at, { type: 'triangle', from: 180, to: 90, gain: 0.25, decay: 0.12, reverb: 0.5 });

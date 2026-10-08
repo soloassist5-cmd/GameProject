@@ -59,6 +59,9 @@ export class Feedback {
       case 'throw':
         this.audio.throwStone(at);
         break;
+      case 'dryThrow':
+        this.audio.dryThrow();
+        break;
       case 'alert':
         this.audio.enemyAlert(at);
         fx?.addTrauma(0.35);
